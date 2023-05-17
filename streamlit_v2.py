@@ -82,23 +82,26 @@ reg = RandomForestRegressor()
 X_train, X_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.2, random_state=SEED)
 reg.fit(X_train, y_train)
 y_pred = reg.predict(X_test)
+
+# Create Metric
+mse = mean_squared_error(y_test, y_pred)**(0.5)
 np.bool = np.bool_
 
 explainer = shap.TreeExplainer(reg)
 shap_values = explainer.shap_values(X_train)
 
 # Define SHAP Summary plot
-fig_sum = shap.summary_plot(shap_values, features=X_train, feature_names=X_train.columns)
+# fig_sum = shap.summary_plot(shap_values, features=X_train, feature_names=X_train.columns)
 
 # Define SHAP Force plot
 i = 127
-fig_force = shap.force_plot(explainer.expected_value, shap_values[i], features=X_train.loc[i], feature_names=X_train.columns)
+#fig_force = shap.force_plot(explainer.expected_value, shap_values[i], features=X_train.loc[i], feature_names=X_train.columns)
 #fig_force = go.Figure(force_plot.data[0])
 
-fig_force_2 = shap.force_plot(explainer.expected_value, shap_values, X_train)
+#fig_force_2 = shap.force_plot(explainer.expected_value, shap_values, X_train)
 
 # Define SHAP Dependence plot
-fig_dep = shap.dependence_plot("horsepower", shap_values, X_train)
+#fig_dep = shap.dependence_plot("horsepower", shap_values, X_train)
 
 ##################################################
 ########## Streamlite Dashboard ##################
@@ -125,8 +128,20 @@ st.divider()
 tab1, tab2, tab3 = st.tabs(["Model", "XAI", "3"])
 
 with tab1:
-   st.write('Below is a snapshot is listed of the first 5 records from the created dataframe')
+   st.write('Below is a snapshot of the original dataframe')
+   st.write(df.head(5))
+   st.divider()
+   st.write('Below is a snapshot of the dataframe, with labeled encoded columns')
    st.write(df_imputed.head(5))
+   #st.table(x_data.columns)
+   st.write('The machine learning model was trained with the following features to predict the target variable')
+   for feature in features:
+    st.markdown(f"- {feature}")
+   st.write('Prediction target:')
+   st.markdown(f"- Highway-mpg")
+   st.divider()
+   st.write('The models mean squared error is:')
+   st.metric(label="MSE", value=mse, delta="1.2 °F")
 
 with tab2:
     #col1, col2, col3 = st.columns(3, gap="medium")
@@ -134,8 +149,9 @@ with tab2:
     #with col1:
     st.write("This is col 1") 
     #st.pyplot(fig_sum, clear_figure=False)
-    summary_plot = shap.summary_plot(shap_values, features=X_train, feature_names=X_train.columns)
-    st.pyplot(summary_plot, bbox_inches='tight', clear_figure=False)
+    #summary_plot = shap.summary_plot(shap_values, features=X_train, feature_names=X_train.columns)
+    #st.pyplot(summary_plot, bbox_inches='tight', clear_figure=False)
+    st_shap(shap.summary_plot(shap_values, features=X_train, feature_names=X_train.columns))
 
     #with col2:
     st.write("This is col 2")  
@@ -143,13 +159,15 @@ with tab2:
     'Which data record do you want to analyze?',
     (1, 2, 3))
     st.write('You selected:', option)
-    st_shap(fig_dep)
+    st_shap(shap.dependence_plot("horsepower", shap_values, X_train))
 
     #with col3:
-    st.write("This is col 3")  
-    st_shap(fig_force)
-    shap.force_plot(explainer.expected_value, shap_values, X_train)
-    st.pyplot(clear_figure=False)
+    st.write("This is col 3")
+    shap.initjs()  
+    st_shap(shap.force_plot(explainer.expected_value, shap_values[i], features=X_train.loc[i], feature_names=X_train.columns))
+    #st_shap(shap.force_plot(explainer.expected_value, shap_values, X_train))
+    #shap.force_plot(explainer.expected_value, shap_values, X_train)
+    #st.pyplot(shap.force_plot(explainer.expected_value, shap_values, X_train))
 
 with tab3:
     shap.initjs()

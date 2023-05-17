@@ -9,11 +9,11 @@ import numpy as np
 import pandas as pd
 
 
-@st.experimental_memo
+@st.cache_data
 def load_data():
     return shap.datasets.adult()
 
-@st.experimental_memo
+@st.cache_data
 def load_model(X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=7)
     d_train = xgboost.DMatrix(X_train, label=y_train)
