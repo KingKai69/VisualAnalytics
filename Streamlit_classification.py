@@ -5,9 +5,7 @@ from sklearn.model_selection import train_test_split
 import xgboost
 import numpy as np
 import pandas as pd
-import streamlit as st
-import pandas as pd
-import numpy as np
+np.bool = np.bool_
 import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
@@ -44,10 +42,12 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
 import matplotlib
+matplotlib.use('Agg')
 
 #######################################################
 ################ MACHINE LEARNING #####################
 #######################################################
+
 
 # Import DataSet from GitHub Respository and define which Excelsheets are to be transferred into pandas dataframes
 path ="https://github.com/KingKai69/VisualAnalytics/raw/main/Automobile_data.csv"
@@ -92,7 +92,36 @@ df_enc_3['symboling'] = df_enc_3['symboling'].replace(-2, 'low-risk')
 # Fixing the SEED
 SEED = 27
 
-# Define features
+# Define features 
+features = [
+    'normalized-losses',
+    'make',
+    'fuel-type',
+    'aspiration',
+    'num-of-doors',
+    'body-style',
+    'drive-wheels',
+    'engine-location',
+    'wheel-base',
+    'length',
+    'width',
+    'height',
+    'curb-weight',
+    'engine-type',
+    'num-of-cylinders',
+    'engine-size',
+    'fuel-system',
+    'bore',
+    'stroke',
+    'compression-ratio',
+    'horsepower',
+    'peak-rpm',
+    'city-mpg',
+    'highway-mpg',
+    'price',
+]
+
+# Define features nonCor
 features_nonCor = [
     'make',
     'fuel-type',
@@ -139,8 +168,73 @@ shap_values_tree = explainer.shap_values(X_train)
 ################ Explainable AI #######################
 #######################################################
 
+#import streamlit.components.v1 as components
+shap.initjs()
+
+#def st_shap(plot, height=None):
+#    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+#    components.html(shap_html, height=height)
+
+# Some Basic settings
+st.set_option('deprecation.showPyplotGlobalUse', False)
+# Set dashboard width to entire width of screen
+st.set_page_config(layout="wide")
+
+with st.container():
+   st.title('Explainable AI with automobile dataset')
+
+st.divider()
+
+tab1, tab2, tab3 = st.tabs(["Dataframe", "Summary", "XAI"])
+
+with tab1:
+   st.write('Below is a snapshot of the original dataframe') 
+   st.write(df.head(5))
+   st.divider()
+   st.write('Below is a snapshot of the dataframe, with labeled encoded columns')
+   st.write(df_imp.head(5))
+   #st.table(x_data.columns)
+   st.write('The machine learning model was trained with the following features to predict the target variable')
+   for feature in features:
+    st.markdown(f"- {feature}")
+   st.write('Prediction target:')
+   st.markdown(f"- Highway-mpg")
+   st.divider()
+
+
+with tab2:
+
+#Shap values 
+   shap.initjs()
+
+   st.write('Below is a snapshot of the Shap Force Plot')
+   #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0], X_test))
+   #st_shap(force_plot = shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_test))
+   
+   st.write('Below is a snapshot of the Bar Chart for Mean Importance')
+   st_shap(shap.summary_plot(shap_values_tree, X_train, plot_type="bar")) 
+   
+   
+   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree[0,:], X_train.iloc[0,:]), height=200, width=1000)
+   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_train), height=400, width=1000)
+   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree[0], X_train.iloc[0]), height=200, width=1000)
+   #st_shap(shap.force_plot(explainer.expected_value[0], shap_values[0]))
+   #st_shap(shap.force_plot(explainer.expected_value, shap_values[0, :], X_train.iloc[0, :]))
+   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_train), height=400, width=1000)
+    
+
+with tab3:
+    st.write('Below is a snapshot of the original dataframe')
+
+
+
+
+
 #st_shap(shap.plots.waterfall(shap_values[0]), height=300)
 #st_shap(shap.plots.beeswarm(shap_values), height=300)
 
-st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree[0,:], X_train.iloc[0,:]), height=200, width=1000)
-st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_train), height=400, width=1000)
+#tab1, tab2, tab3 = st.tabs(["Model", "XAI", "3"])
+
+#with tab1:
+#   st.write('Below is a snapshot of the original dataframe')
+
