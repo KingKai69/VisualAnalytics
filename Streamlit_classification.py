@@ -189,25 +189,27 @@ st.divider()
 col1, col2, col3 = st.columns([1,1,1], gap="large")
 
 with col1:
-    st.subheader('Model')
+    st.subheader('Classification Model')
     col7, col8 = st.columns([1,1], gap="large")
     with col7:
         st.write('Below is a snapshot of the original dataframe:') 
-        st.write(df.head(5))
+        st.write(df.head(6))
     with col8:
         st.write('Below is a snapshot of the preproceddes dataframe:')
         #st.write('Below is a snapshot of the preproceddes dataframe, with removed NaN values, labeled encoded columns and scaled features')
-        st.write(df_imp.head(5))
+        st.write(df_imp.head(6))
    
     #st.subheader('Correlation Analysis')
     #st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
     col9, col10 = st.columns([1,1], gap="large")
     with col9:
+        st.write('Correlation matrix')
         fig1, ax1 = plt.subplots()
         sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
         st.pyplot(fig1, clear_figure=True)
     
     with col10:
+        st.write('Confusion Matrix')
         fig, ax = plt.subplots()
         sns.heatmap(cm, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
         plt.figure()
@@ -219,10 +221,10 @@ with col1:
     col11, col12 = st.columns([1,1], gap="large")
     with col11:
         st.write('All feature pairs with a correlation higher +/-0.7')
-        st.dataframe(high_corr)
+        st.dataframe(high_corr.head(6))
     with col12:
         st.write('In the end the following features are used for modelling')
-        st.experimental_data_editor(df_feature)
+        st.experimental_data_editor(df_feature.head(6))
         #st.table(x_data.columns)
 
     #st.write('The machine learning model was trained with the following features to predict the target variable')
@@ -238,7 +240,7 @@ with col1:
 
 with col2:
     #st.title('Shap Force Plot')
-    st.subheader('Explenation')
+    st.subheader('XAI Summary Explenation')
     st.write('Shap Summary Plot')
     fig_summary=shap.summary_plot(shap_values_tree, X_train, plot_type="bar")
     st.pyplot(fig_summary)
@@ -247,32 +249,36 @@ with col2:
 
     with col4:
         #Summary Plot der Klasse 0
-        st.write('Summary Plot der Klasse 0')
+        st.write('Summary Plot of Class 0-High Risk')
         summaryplot0=shap.summary_plot(shap_values_tree[0], X_test)
         st.pyplot(summaryplot0)
 
     with col5:
         #Summary Plot der Klasse 1
-        st.write('Summary Plot der Klasse 1')
+        st.write('Summary Plot of Class 1-Low Risk')
         summaryplot1=(shap.summary_plot(shap_values_tree[1], X_test))
         st.pyplot(summaryplot1)
         
     with col6:
         #Summary Plot der Klasse 2
-        st.write("Summary Plot der Klasse 2")
+        st.write("Summary Plot of Class 2-Medium Risk")
         summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
         st.pyplot(summaryplot2)
 
 with col3:
-    st.subheader('Overview false predictions')
+    st.subheader('XAI Detail')
+    st.write('Overview False Predictions')
     st.dataframe(def_pred_res_fil)
     iloc = 31
 
     # Explain Single prediction from test set from Class 0-High risk
+    st.write("Single prediction from test set from Class 0-High risk")
     st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
     # Explain Single prediction from test set from Class 1-Low risk
+    st.write("Single prediction from test set from Class 1-Low risk")
     st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
     # Explain Single prediction from test set from Class 2-Medium risk
+    st.write("Single prediction from test set from Class 2-Medium risk")
     st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
 
 
