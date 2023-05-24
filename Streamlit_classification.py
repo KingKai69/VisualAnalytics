@@ -176,7 +176,7 @@ shap_values_tree = explainer_tree.shap_values(X_test)
 #shap.initjs()
 
 # Some Basic settings
-#st.set_option('deprecation.showPyplotGlobalUse', False)
+st.set_option('deprecation.showPyplotGlobalUse', False)
 # Set dashboard width to entire width of screen
 st.set_page_config(layout="wide")
 
@@ -186,59 +186,201 @@ with st.container():
    st.title('Explainable AI with automobile dataset')
 st.divider()
 
-tab1, tab2, tab3 = st.tabs(["Classification model", "XAI Summary", "XAI Detail"])
+col1, col2, col3 = st.columns([1,1,1], gap="large")
 
-#### Classification model ####
-with tab1:
-   st.write('Below is a snapshot of the original dataframe without any preprocessing steps:') 
-   st.write(df.head(5))
-   st.divider()
-   st.write('Below is a snapshot of the dataframe, with removed NaN values, labeled encoded columns and scaled features')
-   st.write(df_imp.head(5))
-   st.divider()
-   st.subheader('Correlation Analysis')
-   st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
+with col1:
+    st.subheader('Model')
+    col7, col8 = st.columns([1,1], gap="large")
+    with col7:
+        st.write('Below is a snapshot of the original dataframe:') 
+        st.write(df.head(5))
+    with col8:
+        st.write('Below is a snapshot of the preproceddes dataframe:')
+        #st.write('Below is a snapshot of the preproceddes dataframe, with removed NaN values, labeled encoded columns and scaled features')
+        st.write(df_imp.head(5))
    
-   fig1, ax1 = plt.subplots(figsize=(4, 4))
-   sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
-   st.pyplot(fig1)
-
-   st.divider()
-   st.write('Below all feature pairs with a correlation above 0.6 / below -0.6 are displayed. Accordingly for each feature pair, one feature is removed.')
-   st.dataframe(high_corr)
-   st.divider()
-   st.write('In the end the following features are used for modelling')
-   st.experimental_data_editor(df_feature)
-   #st.table(x_data.columns)
-   st.write('The machine learning model was trained with the following features to predict the target variable')
-   for feature in features:
-    st.markdown(f"- {feature}")
-   st.write('Prediction target:')
-   st.markdown(f"- Highway-mpg")
-   st.divider()
-   st.title('Performance')
-   st.metric(label="F1-score", value="89,2 %", delta="XX")
-   fig, ax = plt.subplots()
-   sns.heatmap(cm, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
-   plt.figure(figsize=(4, 4))
-   plt.xlabel('Predicted')
-   plt.ylabel('Actual')
-   st.pyplot(fig)
-
-#### tab2 ####
-with tab2:
-   st.title('Shap Force Plot')
-   st.write('Explanation')
-   st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0], X_test))
-   
-   st.title('Shap Summary Plot')
-   st.write('Explanation')
-   st_shap(shap.summary_plot(shap_values_tree, X_train, plot_type="bar"), height=400, width=1000) 
+    #st.subheader('Correlation Analysis')
+    #st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
+    col9, col10 = st.columns([1,1], gap="large")
+    with col9:
+        fig1, ax1 = plt.subplots()
+        sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
+        st.pyplot(fig1, clear_figure=True)
     
-#### tab3 ####
-with tab3:
+    with col10:
+        fig, ax = plt.subplots()
+        sns.heatmap(cm, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
+        plt.figure()
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        st.pyplot(fig, clear_figure=True)
+
+
+    col11, col12 = st.columns([1,1], gap="large")
+    with col11:
+        st.write('All feature pairs with a correlation higher +/-0.7')
+        st.dataframe(high_corr)
+    with col12:
+        st.write('In the end the following features are used for modelling')
+        st.experimental_data_editor(df_feature)
+        #st.table(x_data.columns)
+
+    #st.write('The machine learning model was trained with the following features to predict the target variable')
+    #for feature in features:
+        #st.markdown(f"- {feature}")
+    #st.write('Prediction target:')
+    
+    
+    #st.markdown(f"- Highway-mpg")
+    #st.title('Performance')
+    #st.metric(label="F1-score", value="89,2 %", delta="XX")
+
+
+with col2:
+    #st.title('Shap Force Plot')
+    st.subheader('Explenation')
+    st.write('Shap Summary Plot')
+    fig_summary=shap.summary_plot(shap_values_tree, X_train, plot_type="bar")
+    st.pyplot(fig_summary)
+
+    col4, col5, col6 = st.columns([1,1,1], gap="large")
+
+    with col4:
+        #Summary Plot der Klasse 0
+        st.write('Summary Plot der Klasse 0')
+        summaryplot0=shap.summary_plot(shap_values_tree[0], X_test)
+        st.pyplot(summaryplot0)
+
+    with col5:
+        #Summary Plot der Klasse 1
+        st.write('Summary Plot der Klasse 1')
+        summaryplot1=(shap.summary_plot(shap_values_tree[1], X_test))
+        st.pyplot(summaryplot1)
+        
+    with col6:
+        #Summary Plot der Klasse 2
+        st.write("Summary Plot der Klasse 2")
+        summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
+        st.pyplot(summaryplot2)
+
+with col3:
     st.subheader('Overview false predictions')
     st.dataframe(def_pred_res_fil)
+    iloc = 31
+
+    # Explain Single prediction from test set from Class 0-High risk
+    st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
+    # Explain Single prediction from test set from Class 1-Low risk
+    st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
+    # Explain Single prediction from test set from Class 2-Medium risk
+    st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
+
+
+
+
+
+
+
+
+
+
+
+
+#tab1, tab2, tab3 = st.tabs(["Classification model", "XAI Summary", "XAI Detail"])
+
+#### Classification model ####
+#with tab1:
+#   st.write('Below is a snapshot of the original dataframe without any preprocessing steps:') 
+#   st.write(df.head(5))
+#   st.divider()
+#   st.write('Below is a snapshot of the dataframe, with removed NaN values, labeled encoded columns and scaled features')
+#   st.write(df_imp.head(5))
+#   st.divider()
+#   st.subheader('Correlation Analysis')
+#   st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
+   
+#   fig1, ax1 = plt.subplots(figsize=(4, 4))
+#   sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
+#   st.pyplot(fig1, clear_figure=True)
+
+#   st.divider()
+#   st.write('Below all feature pairs with a correlation above 0.6 / below -0.6 are displayed. Accordingly for each feature pair, one feature is removed.')
+#   st.dataframe(high_corr)
+#   st.divider()
+#   st.write('In the end the following features are used for modelling')
+#   st.experimental_data_editor(df_feature)
+   #st.table(x_data.columns)
+#   st.write('The machine learning model was trained with the following features to predict the target variable')
+#   for feature in features:
+#    st.markdown(f"- {feature}")
+#   st.write('Prediction target:')
+#   st.markdown(f"- Highway-mpg")
+#   st.divider()
+#   st.title('Performance')
+#   st.metric(label="F1-score", value="89,2 %", delta="XX")
+#   fig, ax = plt.subplots()
+#   sns.heatmap(cm, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
+#   plt.figure(figsize=(4, 4))
+#   plt.xlabel('Predicted')
+#   plt.ylabel('Actual')
+#   st.pyplot(fig, clear_figure=True)
+
+#### tab2 ####
+#with tab2:
+   #st.title('Shap Force Plot')
+   #st.write('Explanation')
+   #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0], X_test))
+   #st.title('Shap Summary Plot')
+   #fig_summary=shap.summary_plot(shap_values_tree, X_train, plot_type="bar")
+   #st.pyplot(fig_summary)
+   
+   #height=800, width=600
+
+   #st_shap(shap.summary_plot(shap_values_tree[2], X_test))
+   #st_shap(shap.summary_plot(shap_values_tree[1], X_test))
+
+   #col1, col2, col3 = st.columns([1,1,1], gap="large")
+   #with col1:
+      # Summary Plot der Klasse 0
+      #st.write('Summary Plot der Klasse 0')
+      #summaryplot0=shap.summary_plot(shap_values_tree[0], X_test)
+      #st.pyplot(summaryplot0)
+      
+   #with col2:
+      # Summary Plot der Klasse 1
+      #st.write('Summary Plot der Klasse 1')
+      #summaryplot1=(shap.summary_plot(shap_values_tree[1], X_test))
+      #st.pyplot(summaryplot1)
+    
+   #with col3:
+      # Summary Plot der Klasse 2
+      #st.write("Summary Plot der Klasse 2")
+      #summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
+      #st.pyplot(summaryplot2)
+      
+    
+   
+   # Summary Plot der Klasse 1
+
+   #st_shap(shap.summary_plot(shap_values_tree[2], X_test))
+    
+#### tab3 ####
+#with tab3:
+    #st.subheader('Overview false predictions')
+    #st.dataframe(def_pred_res_fil)
+    #iloc = 31
+
+    # Explain Single prediction from test set from Class 0-High risk
+    #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
+    # Explain Single prediction from test set from Class 1-Low risk
+    #st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
+    # Explain Single prediction from test set from Class 2-Medium risk
+    #st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
+
+
+    #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0]))
+
+
 
 
 
