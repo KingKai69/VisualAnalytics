@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_shap import st_shap
 import shap
-import xgboost
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -18,7 +17,7 @@ from sklearn.model_selection import TimeSeriesSplit, cross_validate
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import confusion_matrix
 
-#matplotlib.use('Agg')
+matplotlib.use('Agg')
 np.bool = np.bool_
 
 #######################################################

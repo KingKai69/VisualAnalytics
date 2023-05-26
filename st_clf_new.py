@@ -5,6 +5,7 @@ import shap
 # Import of basic libraries
 import pandas as pd
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
@@ -20,8 +21,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import f1_score, matthews_corrcoef, make_scorer, confusion_matrix
 
-# Numpy definition
-#matplotlib.use('Agg')
+# Numpy & matplotlib definitions
+matplotlib.use('Agg')
 np.bool = np.bool_
 
 #######################################################
@@ -189,6 +190,7 @@ st.set_page_config(layout="wide")
 #### title ####
 with st.container():
    st.title('Explainable AI with automobile dataset')
+   st.write('test')
 st.divider()
 
 col1, col2, col3 = st.columns([1,1,1], gap="large")
