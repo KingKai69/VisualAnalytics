@@ -21,7 +21,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import f1_score, matthews_corrcoef, make_scorer, confusion_matrix
 
-# Numpy & matplotlib definitions
+# Numpy, pandas & matplotlib definitions
+pd.options.mode.chained_assignment = None  # default='warn'
 matplotlib.use('Agg')
 np.bool = np.bool_
 
@@ -166,9 +167,13 @@ y_pred_final = clf_final.predict(X_test)
 f1_final = f1_score(y_test, y_pred_final, average='weighted', zero_division=1)
 cm_final = confusion_matrix(y_test, y_pred_final)
 
-# df result
+# Create df result
 df_results = pd.DataFrame({'Test Labels': y_test, 'Predicted Labels': y_pred_final})
-
+df_exp = pd.concat([X_test, df_results], axis=1)
+df_exp_false = df_exp[df_exp['Test Labels'] != df_exp['Predicted Labels']]
+df_exp_false['iloc_xtest_df'] = [29, 31, 38, 45, 50]
+new_order = ['iloc_xtest_df', 'Test Labels', 'Predicted Labels'] + list(df_exp_false.columns[:18])
+df_exp_false = df_exp_false[new_order]
 
 ##### Compute SHAP values #####
 explainer_tree = shap.TreeExplainer(clf_final)
@@ -189,8 +194,7 @@ st.set_page_config(layout="wide")
 
 #### title ####
 with st.container():
-   st.title('Explainable AI with automobile dataset')
-   st.write('test')
+   st.title('Explainable AI with automobile data')
 st.divider()
 
 col1, col2, col3 = st.columns([1,1,1], gap="large")
@@ -275,8 +279,12 @@ with col2:
 with col3:
     st.subheader('XAI Detail')
     st.write('Overview False Predictions')
-    st.dataframe(df_results)
-    iloc = 31
+    st.dataframe(df_exp_false)
+    iloc = st.selectbox(
+        'Choose the ID for the analysis of a single false prediction',
+        (29, 31, 38, 45, 50))
+    st.write('You selected:', iloc)
+    #iloc = 31
 
     # Explain Single prediction from test set from Class 0-High risk
     st.write("Single prediction from test set from Class 0-High risk")
