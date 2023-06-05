@@ -168,6 +168,11 @@ cm_final = confusion_matrix(y_test, y_pred_final)
 
 # df result
 df_results = pd.DataFrame({'Test Labels': y_test, 'Predicted Labels': y_pred_final})
+df_exp = pd.concat([X_test, df_results], axis=1)
+df_exp_false = df_exp[df_exp['Test Labels'] != df_exp['Predicted Labels']]
+df_exp_false.loc[:, 'iloc_xtest'] = [29, 31, 38, 45, 50]
+new_order = ['Test Labels', 'Predicted Labels', 'iloc_xtest'] + list(df_exp_false.columns[:18])
+df_exp_false = df_exp_false[new_order]
 
 
 ##### Compute SHAP values #####
@@ -189,8 +194,7 @@ st.set_page_config(layout="wide")
 
 #### title ####
 with st.container():
-   st.title('Explainable AI with automobile dataset')
-   st.write('test')
+   st.title('Explainable AI with automobile data')
 st.divider()
 
 col1, col2, col3 = st.columns([1,1,1], gap="medium")
@@ -199,16 +203,21 @@ with col1:
     st.subheader('Classification Model')
     col7, col8 = st.columns([1,1], gap="small")
     with col7:
-        st.write('Below is a snapshot of the original dataframe:') 
+        st.write('Dataframe with origin data:') 
         st.dataframe(df, width=400, height=200)
     with col8:
-        st.write('Below is a snapshot of the preprocessed dataframe:')
+        st.write('Dataframe with preprocessed data:')
         #st.write('Below is a snapshot of the preproceddes dataframe, with removed NaN values, labeled encoded columns and scaled features')
         st.dataframe(df_enc_3, width=400, height=200)
+    st.divider()
+    st.write('**Feature Selection with correlation matrix**')    
    
     #st.subheader('Correlation Analysis')
     #st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
     col9, col10 = st.columns([1,1], gap="small")
+    st.divider()
+    st.write('**Evaluation**')
+
     with col9:
         st.write('Correlation matrix:')
         fig1, ax1 = plt.subplots()
@@ -216,22 +225,23 @@ with col1:
         st.pyplot(fig1, clear_figure=True)
     
     with col10:
-        st.write('Final features that are used for modelling:')
-        st.experimental_data_editor(df_feature, width=400, height=160)
+        st.write('Selected features:')
+        st.experimental_data_editor(df_feature, width=400, height=160, disabled=True)
 
 
     col11, col12 = st.columns([1,1], gap="large")
     with col11:
-        st.write('Confusion Matrix:')
+        st.metric(label="F1-Score (Cross validation)", value="0.86", delta=" +/- 0.07", delta_color="off")
+        st.metric(label="F1-Score (Unseen test data)", value="0.90")
+    with col12:
+        st.write('Confusion matrix for unseen test data:')
         fig, ax = plt.subplots()
         sns.heatmap(cm_final, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
         plt.figure()
         plt.xlabel('Predicted')
         plt.ylabel('Actual')
         st.pyplot(fig, clear_figure=True)
-    with col12:
-        st.metric(label="F1-Score seen data", value="0.82", delta="0.00")
-        st.metric(label="F1-Score unseen data", value="0.90", delta="0.08")
+        
         
 
     #st.write('The machine learning model was trained with the following features to predict the target variable')
@@ -247,7 +257,7 @@ with col1:
 
 with col2:
     #st.title('Shap Force Plot')
-    st.subheader('XAI Summary Explenation')
+    st.subheader('Summary explanation')
     st.write('Shap Summary Plot')
     fig_summary=shap.summary_plot(shap_values_tree, X_test, plot_type="bar", class_inds="original", class_names=clf_final.classes_)
     st.pyplot(fig_summary)
@@ -256,43 +266,49 @@ with col2:
 
     with col4:
         #Summary Plot der Klasse 0
-        st.write('Summary Plot of Class 0-High Risk')
+        st.write('Summary plot of class high-risk')
         summaryplot0=shap.summary_plot(shap_values_tree[0], X_test)
         st.pyplot(summaryplot0)
 
     with col5:
         #Summary Plot der Klasse 1
-        st.write('Summary Plot of Class 1-Low Risk')
+        st.write('Summary plot of class low-risk')
         summaryplot1=(shap.summary_plot(shap_values_tree[1], X_test))
         st.pyplot(summaryplot1)
         
     with col6:
         #Summary Plot der Klasse 2
-        st.write("Summary Plot of Class 2-Med Risk")
+        st.write("Summary plot of class med-risk")
         summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
         st.pyplot(summaryplot2)
 
     
 
 with col3:
-    st.subheader('XAI Detail')
+    st.subheader('Detail explanation')
     st.write('Overview False Predictions')
-    st.dataframe(df_results, width=420, height=90)
-    iloc = 31
+    st.dataframe(df_exp_false, width=800, height=180)
+    
+    st.divider()
+    option = [29, 31, 38, 45, 50]
+    iloc = st.selectbox('Choose a single data instance for analysis:', option)
+    st.write('The plots show explanation for data instance with iloc:', iloc)
 
     # Explain Single prediction from test set from Class 0-High risk
-    st.write("Single prediction from test set from Class 0-High risk")
+    st.write("Force plot high-risk")
     st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
     # Explain Single prediction from test set from Class 1-Low risk
-    st.write("Single prediction from test set from Class 1-Low risk")
+    st.write("Force plot low risk")
     st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
     # Explain Single prediction from test set from Class 2-Medium risk
-    st.write("Single prediction from test set from Class 2-Medium risk")
+    st.write("Force plot medium-risk")
     st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
 
 
 
-
+# 0 high
+# 1 low
+# 2 medium
 
 
 
