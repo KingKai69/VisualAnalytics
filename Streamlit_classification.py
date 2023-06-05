@@ -185,22 +185,22 @@ with st.container():
    st.title('Explainable AI with automobile dataset')
 st.divider()
 
-col1, col2, col3 = st.columns([1,1,1], gap="large")
+col1, col2, col3 = st.columns([1,1,1], gap="medium")
 
 with col1:
     st.subheader('Classification Model')
-    col7, col8 = st.columns([1,1], gap="large")
+    col7, col8 = st.columns([1,1], gap="small")
     with col7:
         st.write('Below is a snapshot of the original dataframe:') 
-        st.write(df.head(6))
+        st.dataframe(df, width=400, height=200)
     with col8:
         st.write('Below is a snapshot of the preproceddes dataframe:')
         #st.write('Below is a snapshot of the preproceddes dataframe, with removed NaN values, labeled encoded columns and scaled features')
-        st.write(df_imp.head(6))
+        st.dataframe(df_imp, width=400, height=200)
    
     #st.subheader('Correlation Analysis')
     #st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
-    col9, col10 = st.columns([1,1], gap="large")
+    col9, col10 = st.columns([1,1], gap="small")
     with col9:
         st.write('Correlation matrix')
         fig1, ax1 = plt.subplots()
@@ -217,13 +217,13 @@ with col1:
         st.pyplot(fig, clear_figure=True)
 
 
-    col11, col12 = st.columns([1,1], gap="large")
+    col11, col12 = st.columns([1,1], gap="small")
     with col11:
         st.write('All feature pairs with a correlation higher +/-0.7')
-        st.dataframe(high_corr.head(6))
+        st.dataframe(high_corr, width=400, height=160)
     with col12:
-        st.write('In the end the following features are used for modelling')
-        st.experimental_data_editor(df_feature.head(6))
+        st.write('Final features that are used for modelling')
+        st.experimental_data_editor(df_feature, width=400, height=160)
         #st.table(x_data.columns)
 
     #st.write('The machine learning model was trained with the following features to predict the target variable')
@@ -244,7 +244,7 @@ with col2:
     fig_summary=shap.summary_plot(shap_values_tree, X_train, plot_type="bar")
     st.pyplot(fig_summary)
 
-    col4, col5, col6 = st.columns([1,1,1], gap="large")
+    col4, col5, col6 = st.columns([1,1,1], gap="small")
 
     with col4:
         #Summary Plot der Klasse 0
@@ -260,25 +260,31 @@ with col2:
         
     with col6:
         #Summary Plot der Klasse 2
-        st.write("Summary Plot of Class 2-Medium Risk")
+        st.write("Summary Plot of Class 2-Med Risk")
         summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
         st.pyplot(summaryplot2)
 
 with col3:
     st.subheader('XAI Detail')
     st.write('Overview False Predictions')
-    st.dataframe(def_pred_res_fil)
+    st.dataframe(def_pred_res_fil, width=420, height=90)
     iloc = 31
 
     # Explain Single prediction from test set from Class 0-High risk
     st.write("Single prediction from test set from Class 0-High risk")
+    #fig2, ax2 = plt.subplots()
     st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
+    #st.pyplot(fig2, clear_figure=True)
     # Explain Single prediction from test set from Class 1-Low risk
     st.write("Single prediction from test set from Class 1-Low risk")
+    #fig3, ax3 = plt.subplots()
     st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
+    #st.pyplot(fig3, clear_figure=True)
     # Explain Single prediction from test set from Class 2-Medium risk
     st.write("Single prediction from test set from Class 2-Medium risk")
+    #fig4, ax4 = plt.subplots()
     st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
+    #st.pyplot(fig4, clear_figure=True)
 
 
 

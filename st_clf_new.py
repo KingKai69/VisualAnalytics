@@ -193,46 +193,46 @@ with st.container():
    st.write('test')
 st.divider()
 
-col1, col2, col3 = st.columns([1,1,1], gap="large")
+col1, col2, col3 = st.columns([1,1,1], gap="medium")
 
 with col1:
     st.subheader('Classification Model')
-    col7, col8 = st.columns([1,1], gap="large")
+    col7, col8 = st.columns([1,1], gap="small")
     with col7:
         st.write('Below is a snapshot of the original dataframe:') 
-        st.write(df.head(6))
+        st.dataframe(df, width=400, height=200)
     with col8:
-        st.write('Below is a snapshot of the preproceddes dataframe:')
+        st.write('Below is a snapshot of the preprocessed dataframe:')
         #st.write('Below is a snapshot of the preproceddes dataframe, with removed NaN values, labeled encoded columns and scaled features')
-        st.write(df_enc_3.head(6))
+        st.dataframe(df_enc_3, width=400, height=200)
    
     #st.subheader('Correlation Analysis')
     #st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
-    col9, col10 = st.columns([1,1], gap="large")
+    col9, col10 = st.columns([1,1], gap="small")
     with col9:
-        st.write('Correlation matrix')
+        st.write('Correlation matrix:')
         fig1, ax1 = plt.subplots()
         sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
         st.pyplot(fig1, clear_figure=True)
     
     with col10:
-        st.write('Confusion Matrix')
-        fig, ax = plt.subplots()
-        sns.heatmap(cm_cv, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
-        plt.figure()
-        plt.xlabel('Predicted')
-        plt.ylabel('Actual')
-        st.pyplot(fig, clear_figure=True)
+        st.write('Final features that are used for modelling:')
+        st.experimental_data_editor(df_feature, width=400, height=160)
 
 
     col11, col12 = st.columns([1,1], gap="large")
     with col11:
-        st.write('All feature pairs with a correlation higher +/-0.7')
-        st.dataframe(high_corr.head(6))
+        st.write('Confusion Matrix:')
+        fig, ax = plt.subplots()
+        sns.heatmap(cm_final, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
+        plt.figure()
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+        st.pyplot(fig, clear_figure=True)
     with col12:
-        st.write('In the end the following features are used for modelling')
-        st.experimental_data_editor(df_feature.head(6))
-        #st.table(x_data.columns)
+        st.metric(label="F1-Score seen data", value="0.82", delta="0.00")
+        st.metric(label="F1-Score unseen data", value="0.90", delta="0.08")
+        
 
     #st.write('The machine learning model was trained with the following features to predict the target variable')
     #for feature in features:
@@ -249,10 +249,10 @@ with col2:
     #st.title('Shap Force Plot')
     st.subheader('XAI Summary Explenation')
     st.write('Shap Summary Plot')
-    fig_summary=shap.summary_plot(shap_values_tree, X_train, plot_type="bar")
+    fig_summary=shap.summary_plot(shap_values_tree, X_test, plot_type="bar", class_inds="original", class_names=clf_final.classes_)
     st.pyplot(fig_summary)
 
-    col4, col5, col6 = st.columns([1,1,1], gap="large")
+    col4, col5, col6 = st.columns([1,1,1], gap="small")
 
     with col4:
         #Summary Plot der Klasse 0
@@ -268,14 +268,16 @@ with col2:
         
     with col6:
         #Summary Plot der Klasse 2
-        st.write("Summary Plot of Class 2-Medium Risk")
+        st.write("Summary Plot of Class 2-Med Risk")
         summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
         st.pyplot(summaryplot2)
+
+    
 
 with col3:
     st.subheader('XAI Detail')
     st.write('Overview False Predictions')
-    st.dataframe(df_results)
+    st.dataframe(df_results, width=420, height=90)
     iloc = 31
 
     # Explain Single prediction from test set from Class 0-High risk
