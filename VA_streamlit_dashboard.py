@@ -48,9 +48,11 @@ le = LabelEncoder()
 df_enc = df_imp.copy()
 columns_to_encode = ['make', 'fuel-type', 'aspiration', 'num-of-doors', 'body-style', 'drive-wheels', 'engine-location','engine-type','num-of-cylinders','fuel-system']  # Liste mit den Spaltennamen
 encoding_mapping = {}
+# Iterate over columns to encode
 for column in columns_to_encode:
     df_enc[column] = le.fit_transform(df_enc[column])
     encoding_mapping[column] = dict(zip(le.classes_, le.transform(le.classes_)))
+# Iterate over encoding mappings
 for feature, mapping in encoding_mapping.items():
     df_data = []
     for category, encoded_value in mapping.items():
@@ -180,14 +182,19 @@ f1_final = f1_score(y_test, y_pred_final, average='weighted', zero_division=1)
 cm_final = confusion_matrix(y_test, y_pred_final)
 
 # df result
+# Create DataFrame with test and predicted labels
 df_results = pd.DataFrame({'Test Labels': y_test, 'Predicted Labels': y_pred_final})
+# Concatenate X_test and the results DataFrame
 df_exp = pd.concat([X_test, df_results], axis=1)
+# Select falsely predicted instances
 df_exp_false = df_exp[df_exp['Test Labels'] != df_exp['Predicted Labels']]
+# Assign specific values to 'iloc_xtest' column
 df_exp_false.loc[:, 'iloc_xtest'] = [21, 29, 31, 38, 45, 50]
+# Reorder columns in df_exp_false
 new_order = ['Test Labels', 'Predicted Labels', 'iloc_xtest'] + list(df_exp_false.columns[:18])
 df_exp_false = df_exp_false[new_order]
 
-##
+# Select correct predictions
 df_exp_corr = df_exp[df_exp['Test Labels'] == df_exp['Predicted Labels']]
 df_exp_corr_hr = df_exp[(df_exp['Test Labels'] == 'high-risk') & (df_exp['Predicted Labels'] == 'high-risk')]
 df_exp_corr_mr = df_exp[(df_exp['Test Labels'] == 'medium-risk') & (df_exp['Predicted Labels'] == 'medium-risk')]
@@ -212,50 +219,59 @@ st.set_page_config(layout="wide")
 
 #### title ####
 with st.container():
-   st.title('Explainable AI with automobile data')
+   st.title('Explainable AI with Automobile Data')
 
-tab1, tab2 = st.tabs(["Main", "Expand detailed explanation"])
+# Create two tabs "Main" & "Expand Detailed Explanation"]
+tab1, tab2 = st.tabs(["Main", "Expand Detailed Explanation"])
 
+# Code for the first tab
 with tab1:
    
+   # Create three columns within the tab
     col1, col2, col3 = st.columns([1,1,1], gap="medium")
 
     with col1:
         st.subheader('Classification Model')
         col7, col8 = st.columns([1,1], gap="small")
         with col7:
-            st.write('Dataframe with origin data:') 
+            st.write('Origin Data:')
+            #Print dataframe for the Origin Data 
             st.dataframe(df, width=400, height=200)
         with col8:
-            st.write('Dataframe with preprocessed data:')
+            st.write('Preprocessed Data:')
             #st.write('Below is a snapshot of the preproceddes dataframe, with removed NaN values, labeled encoded columns and scaled features')
+            #Print dataframe for the Origin Data 
             st.dataframe(df_enc_3, width=400, height=200)
-        st.divider()
-        st.write('**Feature Selection with correlation matrix**')    
-    
+        
+        st.write('**Feature Selection with Correlation Matrix**')    
+
         #st.subheader('Correlation Analysis')
         #st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
         col9, col10 = st.columns([1,1], gap="small")
-        st.divider()
+
         st.write('**Evaluation**')
 
         with col9:
-            st.write('Correlation matrix:')
+            #Print Correlation Matrix
+            st.write('Correlation Matrix:')
             fig1, ax1 = plt.subplots()
             sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
             st.pyplot(fig1, clear_figure=True)
         
         with col10:
-            st.write('Selected features:')
+            #Print all Features that we have selected
+            st.write('Selected Features:')
             st.experimental_data_editor(df_feature, width=400, height=160, disabled=True)
 
 
         col11, col12 = st.columns([1,1], gap="large")
         with col11:
+            #Print our F1-Score (Cross validation) & F1-Score (Unseen test data)
             st.metric(label="F1-Score (Cross validation)", value="0.86", help=" Standard deviation of the 5 fold cross validation is +/- 0.09", delta_color="off")
             st.metric(label="F1-Score (Unseen test data)", value="0.89")
         with col12:
-            st.write('Confusion matrix for unseen test data:')
+            #Print the Confusion Matrix for unseen Test Data
+            st.write('Confusion Matrix for unseen Test Data:')
             fig, ax = plt.subplots()
             sns.heatmap(cm_final, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
             plt.figure()
@@ -278,80 +294,85 @@ with tab1:
 
     with col2:
         #st.title('Shap Force Plot')
-        st.subheader('Summary explanation')
-        st.write('Shap Summary Plot')
+        st.subheader('Summary Explanation')
+        #Print the Shap Summary Plot, which shows the most important features for the ML-model decision
+        st.write('Shap Summary Plot:')
         fig_summary=shap.summary_plot(shap_values_tree, X_test, plot_type="bar", class_inds="original", class_names=clf_final.classes_)
         st.pyplot(fig_summary)
+
+        st.divider()
 
         col4, col5, col6 = st.columns([1,1,1], gap="small")
 
         with col4:
             #Summary Plot der Klasse 0
-            st.write('Summary plot of class high-risk')
+            st.write('Summary Plot of Class high-risk:')
             summaryplot0=shap.summary_plot(shap_values_tree[0], X_test)
             st.pyplot(summaryplot0)
 
         with col5:
             #Summary Plot der Klasse 1
-            st.write('Summary plot of class low-risk')
+            st.write('Summary Plot of Class low-risk:')
             summaryplot1=(shap.summary_plot(shap_values_tree[1], X_test))
             st.pyplot(summaryplot1)
             
         with col6:
             #Summary Plot der Klasse 2
-            st.write("Summary plot of class med-risk")
+            st.write("Summary Plot of Class med-risk:")
             summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
             st.pyplot(summaryplot2)
 
         
 
     with col3:
-        st.subheader('Detail explanation')
-        st.write('Overview False Predictions')
-        st.dataframe(df_exp_false, width=800, height=180)
+        st.subheader('Detail Explanation')
+        st.write('Overview False Predictions:')
+        st.dataframe(df_exp_false, width=800, height=70)
         
-        st.divider()
         option = [21, 29, 31, 38, 45, 50]
-        iloc = st.selectbox('Choose a single data instance for analysis:', option, key=2)
-        st.write('The plots show explanation for data instance with iloc:', iloc)
+        iloc = st.selectbox('Choose a single Data Instance for Analysis:', option, key=2)
+        #st.write('The plots show explanation for data instance with iloc:', iloc)
 
         # Explain Single prediction from test set from Class 0-High risk
-        st.write("Force plot high-risk")
+        st.write("Force Plot high-risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
         # Explain Single prediction from test set from Class 1-Low risk
-        st.write("Force plot low risk")
+        st.write("Force Plot low risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
         # Explain Single prediction from test set from Class 2-Medium risk
-        st.write("Force plot medium-risk")
+        st.write("Force Plot medium-risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
 
-
+#Display of the second tab
 with tab2:
+    #Create three tabs and set gap to medium
     col21, col22, col23 = st.columns([2,1,1], gap="medium")
     with col21:
-        st.subheader('Expanded detail explanation')
-        st.write('Overview False Predictions')
-        st.dataframe(df_exp_false, width=800, height=180)
+        #Print the Dataframe for False Predictions
+        st.subheader('Expanded Detail Explanation')
+        st.write('Overview False Predictions:')
+        st.dataframe(df_exp_false, width=800, height=70)
         
-        st.divider()
-        iloc2 = st.selectbox('Choose a single data instance for analysis:', option, key=1)
-        st.write('The plots show explanation for data instance with iloc:', iloc2)
+        iloc2 = st.selectbox('Choose a single Data Instance for Analysis:', option, key=1)
+        #st.write('The plots show explanation for data instance with iloc:', iloc2)
        
 
         # Explain Single prediction from test set from Class 0-High risk
-        st.write("Force plot high-risk")
+        st.write("Force Plot high-risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc2], X_test.iloc[iloc2,:]))
         # Explain Single prediction from test set from Class 1-Low risk
-        st.write("Force plot low risk")
+        st.write("Force Plot low risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc2], X_test.iloc[iloc2,:]))
         # Explain Single prediction from test set from Class 2-Medium risk
-        st.write("Force plot medium-risk")
+        st.write("Force Plot medium-risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc2], X_test.iloc[iloc2,:]))
         
     with col22:
-        st.subheader('Encoded feature analysis')
-        enc_feature = st.selectbox('Choose a feature:', columns_to_encode)
-        st.write('Selected feature:', enc_feature)
+        st.subheader('Encoded Feature Analysis')
+        #Dropdown-Menu to select a Feature
+        enc_feature = st.selectbox('Choose a Feature:', columns_to_encode)
+        st.write('Selected Feature:', enc_feature)
+        #Print Dataframe of the selected feature
         show_df = enc_feature +"_df"
         df_var_enc = locals()[show_df]
         st.dataframe(df_var_enc, width=800, height=180)
@@ -360,35 +381,42 @@ with tab2:
         #feature_analysis = st.selectbox('Choose a feature', features_nonCor)
         #st.write('The plots show explanation for data instance with iloc:', feature_analysis)
 
+        # Print Histogram for the selected feature for  Class medium-risk
         counts_mr = df_exp_corr_mr[enc_feature].value_counts()
         fig3, ax3 = plt.subplots()
         plt.bar(counts_mr.index, counts_mr.values)
         plt.xlabel(enc_feature)
-        plt.ylabel('Häufigkeit')
-        plt.title('Histogramm Klasse medium-risk')
+        plt.ylabel('Frequency')
+        plt.title('Histogram Class medium-risk')
         plt.xticks(counts_mr.index)
         st.pyplot(fig3, clear_figure=True)
-        st.divider()
-        
+
+        # Print Histogram for the selected feature for  Class high-risk
         counts_hr = df_exp_corr_hr[enc_feature].value_counts()
         fig4, ax4 = plt.subplots()
         plt.bar(counts_hr.index, counts_hr.values)
         plt.xlabel(enc_feature)
-        plt.ylabel('Häufigkeit')
-        plt.title('Histogramm Klasse high-risk')
+        plt.ylabel('Frequency')
+        plt.title('Histogram Class high-risk')
         plt.xticks(counts_hr.index)
         st.pyplot(fig4, clear_figure=True)
     
     with col23:
-        st.subheader('Numerous feature analysis')
+        st.subheader('Numerous Feature Analysis')
+        #Dropdown-Menu to select a Feature
         features_non_enc = ['normalized-losses', 'height', 'curb-weight', 
                             'bore', 'stroke', 'horsepower', 'peak-rpm', 'city-mpg',]
-        fne = st.selectbox('Choose a feature:', features_non_enc)
-        st.write('Selected feature:', fne)
+        fne = st.selectbox('Choose a Feature:', features_non_enc)
+        st.divider()
+        st.write('Selected Feature:', fne)
+        st.divider()
+        #Define the mean value for class medium-risk and class high-risk
         mean_val_corr_mr = round(df_exp_corr_mr[fne].mean(), 2)
         mean_val_corr_hr = round(df_exp_corr_hr[fne].mean(), 2)
-        st.metric(label="Mean value for class medium-risk", value=mean_val_corr_mr)
-        st.metric(label="Mean value for class high-risk", value=mean_val_corr_hr)
+        #Print the Mean Value for Class medium-risk/high-risk
+        st.metric(label="Mean Value for Class medium-risk:", value=mean_val_corr_mr)
+        st.divider()
+        st.metric(label="Mean Value for Class high-risk:", value=mean_val_corr_hr)
    
 
 
