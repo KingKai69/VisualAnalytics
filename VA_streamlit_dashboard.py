@@ -38,7 +38,10 @@ df.rename(columns={'symboling': 'risk-score'}, inplace=True)
 
 # Imputing
 df.replace('?', float('nan'), inplace=True)
-df_imp = df.fillna(df.mode().iloc[0])
+df_imp = df.copy()
+df_imp['normalized-losses'] = df_imp['normalized-losses'].astype('float32')
+df_imp['normalized-losses'] = df_imp[['normalized-losses']].interpolate(method="pad")
+df_imp = df_imp.fillna(df_imp.mode().iloc[0])
 
 # Label Encoding
 le = LabelEncoder()
@@ -161,7 +164,7 @@ X_train, X_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.
 kf_cv = KFold(n_splits = 5, shuffle = True, random_state=SEED)
 
 # Evaluation cross validation
-clf_final = RandomForestClassifier(n_estimators=301, criterion="gini", max_depth=12 , max_features='sqrt', min_samples_split=5, min_samples_leaf=1, bootstrap=False, class_weight='balanced', random_state = SEED)
+clf_final = ExtraTreesClassifier(n_estimators=301, criterion="gini", max_depth=12 , max_features='sqrt', min_samples_split=5, min_samples_leaf=1, bootstrap=False, class_weight='balanced', random_state = SEED)
 scoring = {'f1_score': make_scorer(f1_score, average='weighted', zero_division=1)}
 cv_final = cross_validate(estimator = clf_final, X = X_train, y = y_train, cv = kf_cv, scoring = scoring)
 f1_scores_cv = cv_final['test_f1_score']
@@ -180,7 +183,7 @@ cm_final = confusion_matrix(y_test, y_pred_final)
 df_results = pd.DataFrame({'Test Labels': y_test, 'Predicted Labels': y_pred_final})
 df_exp = pd.concat([X_test, df_results], axis=1)
 df_exp_false = df_exp[df_exp['Test Labels'] != df_exp['Predicted Labels']]
-df_exp_false.loc[:, 'iloc_xtest'] = [29, 31, 38, 45, 50]
+df_exp_false.loc[:, 'iloc_xtest'] = [21, 29, 31, 38, 45, 50]
 new_order = ['Test Labels', 'Predicted Labels', 'iloc_xtest'] + list(df_exp_false.columns[:18])
 df_exp_false = df_exp_false[new_order]
 
@@ -249,8 +252,8 @@ with tab1:
 
         col11, col12 = st.columns([1,1], gap="large")
         with col11:
-            st.metric(label="F1-Score (Cross validation)", value="0.86", help=" Standard deviation of the 5 fold cross validation is +/- 0.07", delta_color="off")
-            st.metric(label="F1-Score (Unseen test data)", value="0.90")
+            st.metric(label="F1-Score (Cross validation)", value="0.86", help=" Standard deviation of the 5 fold cross validation is +/- 0.09", delta_color="off")
+            st.metric(label="F1-Score (Unseen test data)", value="0.89")
         with col12:
             st.write('Confusion matrix for unseen test data:')
             fig, ax = plt.subplots()
@@ -308,7 +311,7 @@ with tab1:
         st.dataframe(df_exp_false, width=800, height=180)
         
         st.divider()
-        option = [29, 31, 38, 45, 50]
+        option = [21, 29, 31, 38, 45, 50]
         iloc = st.selectbox('Choose a single data instance for analysis:', option, key=2)
         st.write('The plots show explanation for data instance with iloc:', iloc)
 
