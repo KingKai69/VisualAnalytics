@@ -368,7 +368,7 @@ with tab2:
         st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc2], X_test.iloc[iloc2,:]))
         
     with col22:
-        st.subheader('Encoded Feature Analysis')
+        st.subheader('Encoded Features')
         #Dropdown-Menu to select a Feature
         enc_feature = st.selectbox('Choose a Feature:', columns_to_encode)
         st.write('Selected Feature:', enc_feature)
@@ -402,21 +402,24 @@ with tab2:
         st.pyplot(fig4, clear_figure=True)
     
     with col23:
-        st.subheader('Numerous Feature Analysis')
+        st.subheader('Numerous Features ')
         #Dropdown-Menu to select a Feature
         features_non_enc = ['normalized-losses', 'height', 'curb-weight', 
                             'bore', 'stroke', 'horsepower', 'peak-rpm', 'city-mpg',]
         fne = st.selectbox('Choose a Feature:', features_non_enc)
-        st.divider()
+        
         st.write('Selected Feature:', fne)
-        st.divider()
+        
         #Define the mean value for class medium-risk and class high-risk
-        mean_val_corr_mr = round(df_exp_corr_mr[fne].mean(), 2)
-        mean_val_corr_hr = round(df_exp_corr_hr[fne].mean(), 2)
+        mean_val_corr_mr = df_exp_corr_mr[fne].mean()
+        mean_val_corr_hr = df_exp_corr_hr[fne].mean()
         #Print the Mean Value for Class medium-risk/high-risk
-        st.metric(label="Mean Value for Class medium-risk:", value=mean_val_corr_mr)
-        st.divider()
-        st.metric(label="Mean Value for Class high-risk:", value=mean_val_corr_hr)
+
+        rounded_mr = '{:.2f}'.format(mean_val_corr_mr)
+        rounded_hr = '{:.2f}'.format(mean_val_corr_hr)
+     
+        st.metric(label="Mean Value for Class medium-risk:", value=rounded_mr)
+        st.metric(label="Mean Value for Class high-risk:", value=rounded_hr)
    
 
 
