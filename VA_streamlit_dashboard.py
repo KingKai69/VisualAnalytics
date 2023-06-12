@@ -1,3 +1,4 @@
+# Import streamlit and shap
 import streamlit as st
 from streamlit_shap import st_shap
 import shap
@@ -8,18 +9,12 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
-from tqdm import tqdm
 
 # Sklearn imports
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.model_selection import KFold, RandomizedSearchCV, train_test_split, cross_validate, cross_val_predict
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, AdaBoostClassifier
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import f1_score, matthews_corrcoef, make_scorer, confusion_matrix
+from sklearn.model_selection import KFold, train_test_split, cross_validate, cross_val_predict
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.metrics import f1_score, make_scorer, confusion_matrix
 
 # Numpy & matplotlib definitions
 matplotlib.use('Agg')
@@ -36,7 +31,7 @@ df.rename(columns={'symboling': 'risk-score'}, inplace=True)
 
 ###### Data Preprocessing ######
 
-# Imputing
+# Remove NaN Values
 df.replace('?', float('nan'), inplace=True)
 df_imp = df.copy()
 df_imp['normalized-losses'] = df_imp['normalized-losses'].astype('float32')
@@ -48,11 +43,10 @@ le = LabelEncoder()
 df_enc = df_imp.copy()
 columns_to_encode = ['make', 'fuel-type', 'aspiration', 'num-of-doors', 'body-style', 'drive-wheels', 'engine-location','engine-type','num-of-cylinders','fuel-system']  # Liste mit den Spaltennamen
 encoding_mapping = {}
-# Iterate over columns to encode
+# Create dataframe for features with origin label and encoded label
 for column in columns_to_encode:
     df_enc[column] = le.fit_transform(df_enc[column])
     encoding_mapping[column] = dict(zip(le.classes_, le.transform(le.classes_)))
-# Iterate over encoding mappings
 for feature, mapping in encoding_mapping.items():
     df_data = []
     for category, encoded_value in mapping.items():
@@ -111,18 +105,18 @@ features = [
     'price',
 ]
 
-# Create correlation matrix
+# Create correlation matrix for feature selection
 Val = df_enc_3[features]
 corrmat = Val.corr()
 
-# Create dataframe with features with hight correlation
+# Create dataframe with features with high correlation
 corrmat_masked = corrmat.mask(abs(corrmat) >= 1)
 high_corr = corrmat_masked[(corrmat_masked > 0.6) | (corrmat_masked < -0.6)].stack().reset_index()
 high_corr.columns = ['Feature_A', 'Feature_B', 'Correlation']
 high_corr = high_corr[high_corr['Feature_A'] < high_corr['Feature_B']]
 high_corr.head(n=120)
 
-# Define features nonCor
+# Define non correlated features
 features_nonCor = [
     'normalized-losses',
     'make',
@@ -181,24 +175,22 @@ y_pred_final = clf_final.predict(X_test)
 f1_final = f1_score(y_test, y_pred_final, average='weighted', zero_division=1)
 cm_final = confusion_matrix(y_test, y_pred_final)
 
-# df result
-# Create DataFrame with test and predicted labels
+# Create dataframe with prediction results
 df_results = pd.DataFrame({'Test Labels': y_test, 'Predicted Labels': y_pred_final})
-# Concatenate X_test and the results DataFrame
+
+# Create dataframe with prediction results and belonging feature values
 df_exp = pd.concat([X_test, df_results], axis=1)
-# Select falsely predicted instances
+
+# Create dataframe with false predictions
 df_exp_false = df_exp[df_exp['Test Labels'] != df_exp['Predicted Labels']]
-# Assign specific values to 'iloc_xtest' column
 df_exp_false.loc[:, 'iloc_xtest'] = [21, 29, 31, 38, 45, 50]
-# Reorder columns in df_exp_false
 new_order = ['Test Labels', 'Predicted Labels', 'iloc_xtest'] + list(df_exp_false.columns[:18])
 df_exp_false = df_exp_false[new_order]
 
-# Select correct predictions
+# Create dataframe with correct predictions for high- and medium-risk
 df_exp_corr = df_exp[df_exp['Test Labels'] == df_exp['Predicted Labels']]
 df_exp_corr_hr = df_exp[(df_exp['Test Labels'] == 'high-risk') & (df_exp['Predicted Labels'] == 'high-risk')]
 df_exp_corr_mr = df_exp[(df_exp['Test Labels'] == 'medium-risk') & (df_exp['Predicted Labels'] == 'medium-risk')]
-
 
 ##### Compute SHAP values #####
 explainer_tree = shap.TreeExplainer(clf_final)
@@ -207,9 +199,6 @@ shap_values_tree = explainer_tree.shap_values(X_test)
 #######################################################
 ################ Explainable AI #######################
 #######################################################
-
-#import streamlit.components.v1 as components
-#shap.initjs()
 
 # Some Basic settings
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -278,19 +267,6 @@ with tab1:
             plt.xlabel('Predicted')
             plt.ylabel('Actual')
             st.pyplot(fig, clear_figure=True)
-            
-            
-
-        #st.write('The machine learning model was trained with the following features to predict the target variable')
-        #for feature in features:
-            #st.markdown(f"- {feature}")
-        #st.write('Prediction target:')
-        
-        
-        #st.markdown(f"- Highway-mpg")
-        #st.title('Performance')
-        #st.metric(label="F1-score", value="89,2 %", delta="XX")
-
 
     with col2:
         #st.title('Shap Force Plot')
@@ -322,8 +298,6 @@ with tab1:
             summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
             st.pyplot(summaryplot2)
 
-        
-
     with col3:
         st.subheader('Detail Explanation')
         st.write('Overview False Predictions:')
@@ -343,7 +317,7 @@ with tab1:
         st.write("Force Plot medium-risk:")
         st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
 
-#Display of the second tab
+# Display of the second tab
 with tab2:
     #Create three tabs and set gap to medium
     col21, col22, col23 = st.columns([2,1,1], gap="medium")
@@ -377,17 +351,13 @@ with tab2:
         df_var_enc = locals()[show_df]
         st.dataframe(df_var_enc, width=800, height=180)
 
-
-        #feature_analysis = st.selectbox('Choose a feature', features_nonCor)
-        #st.write('The plots show explanation for data instance with iloc:', feature_analysis)
-
         # Print Histogram for the selected feature for  Class medium-risk
         counts_mr = df_exp_corr_mr[enc_feature].value_counts()
         fig3, ax3 = plt.subplots()
         plt.bar(counts_mr.index, counts_mr.values)
         plt.xlabel(enc_feature)
         plt.ylabel('Frequency')
-        plt.title('Histogram Class medium-risk')
+        plt.title('Distribution class medium-risk')
         plt.xticks(counts_mr.index)
         st.pyplot(fig3, clear_figure=True)
 
@@ -397,7 +367,7 @@ with tab2:
         plt.bar(counts_hr.index, counts_hr.values)
         plt.xlabel(enc_feature)
         plt.ylabel('Frequency')
-        plt.title('Histogram Class high-risk')
+        plt.title('Distribution class high-risk')
         plt.xticks(counts_hr.index)
         st.pyplot(fig4, clear_figure=True)
     
@@ -420,136 +390,3 @@ with tab2:
      
         st.metric(label="Mean Value for Class medium-risk:", value=rounded_mr)
         st.metric(label="Mean Value for Class high-risk:", value=rounded_hr)
-   
-
-
-
-# 0 high
-# 1 low
-# 2 medium
-
-
-
-
-
-
-
-
-#tab1, tab2, tab3 = st.tabs(["Classification model", "XAI Summary", "XAI Detail"])
-
-#### Classification model ####
-#with tab1:
-#   st.write('Below is a snapshot of the original dataframe without any preprocessing steps:') 
-#   st.write(df.head(5))
-#   st.divider()
-#   st.write('Below is a snapshot of the dataframe, with removed NaN values, labeled encoded columns and scaled features')
-#   st.write(df_imp.head(5))
-#   st.divider()
-#   st.subheader('Correlation Analysis')
-#   st.write('After some preprocessing steps a correlations analysis was performed to identify pairs of features that have a high correlation. The goal is to remove features so that in the end no features have a high correlation. ')
-   
-#   fig1, ax1 = plt.subplots(figsize=(4, 4))
-#   sns.heatmap(corrmat, vmax=.8, square=True, ax=ax1)
-#   st.pyplot(fig1, clear_figure=True)
-
-#   st.divider()
-#   st.write('Below all feature pairs with a correlation above 0.6 / below -0.6 are displayed. Accordingly for each feature pair, one feature is removed.')
-#   st.dataframe(high_corr)
-#   st.divider()
-#   st.write('In the end the following features are used for modelling')
-#   st.experimental_data_editor(df_feature)
-   #st.table(x_data.columns)
-#   st.write('The machine learning model was trained with the following features to predict the target variable')
-#   for feature in features:
-#    st.markdown(f"- {feature}")
-#   st.write('Prediction target:')
-#   st.markdown(f"- Highway-mpg")
-#   st.divider()
-#   st.title('Performance')
-#   st.metric(label="F1-score", value="89,2 %", delta="XX")
-#   fig, ax = plt.subplots()
-#   sns.heatmap(cm, annot=True, cmap='Blues', fmt='d', xticklabels=clf_final.classes_, yticklabels=clf_final.classes_)
-#   plt.figure(figsize=(4, 4))
-#   plt.xlabel('Predicted')
-#   plt.ylabel('Actual')
-#   st.pyplot(fig, clear_figure=True)
-
-#### tab2 ####
-#with tab2:
-   #st.title('Shap Force Plot')
-   #st.write('Explanation')
-   #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0], X_test))
-   #st.title('Shap Summary Plot')
-   #fig_summary=shap.summary_plot(shap_values_tree, X_train, plot_type="bar")
-   #st.pyplot(fig_summary)
-   
-   #height=800, width=600
-
-   #st_shap(shap.summary_plot(shap_values_tree[2], X_test))
-   #st_shap(shap.summary_plot(shap_values_tree[1], X_test))
-
-   #col1, col2, col3 = st.columns([1,1,1], gap="large")
-   #with col1:
-      # Summary Plot der Klasse 0
-      #st.write('Summary Plot der Klasse 0')
-      #summaryplot0=shap.summary_plot(shap_values_tree[0], X_test)
-      #st.pyplot(summaryplot0)
-      
-   #with col2:
-      # Summary Plot der Klasse 1
-      #st.write('Summary Plot der Klasse 1')
-      #summaryplot1=(shap.summary_plot(shap_values_tree[1], X_test))
-      #st.pyplot(summaryplot1)
-    
-   #with col3:
-      # Summary Plot der Klasse 2
-      #st.write("Summary Plot der Klasse 2")
-      #summaryplot2=(shap.summary_plot(shap_values_tree[2], X_test))
-      #st.pyplot(summaryplot2)
-      
-    
-   
-   # Summary Plot der Klasse 1
-
-   #st_shap(shap.summary_plot(shap_values_tree[2], X_test))
-    
-#### tab3 ####
-#with tab3:
-    #st.subheader('Overview false predictions')
-    #st.dataframe(def_pred_res_fil)
-    #iloc = 31
-
-    # Explain Single prediction from test set from Class 0-High risk
-    #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0][iloc], X_test.iloc[iloc,:]))
-    # Explain Single prediction from test set from Class 1-Low risk
-    #st_shap(shap.force_plot(explainer_tree.expected_value[1], shap_values_tree[1][iloc], X_test.iloc[iloc,:]))
-    # Explain Single prediction from test set from Class 2-Medium risk
-    #st_shap(shap.force_plot(explainer_tree.expected_value[2], shap_values_tree[2][iloc], X_test.iloc[iloc,:]))
-
-
-    #st_shap(shap.force_plot(explainer_tree.expected_value[0], shap_values_tree[0]))
-
-
-
-
-
-
-
- #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree[0,:], X_train.iloc[0,:]), height=200, width=1000)
-   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_train), height=400, width=1000)
-   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree[0], X_train.iloc[0]), height=200, width=1000)
-   #st_shap(shap.force_plot(explainer.expected_value[0], shap_values[0]))
-   #st_shap(shap.force_plot(explainer.expected_value, shap_values[0, :], X_train.iloc[0, :]))
-   #st_shap(shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_train), height=400, width=1000)
-
-#def st_shap(plot, height=None):
-#    shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
-#    components.html(shap_html, height=height)
-
-#st_shap(shap.plots.waterfall(shap_values[0]), height=300)
-#st_shap(shap.plots.beeswarm(shap_values), height=300)
-
-
-
-#st_shap(force_plot = shap.force_plot(explainer_tree.expected_value, shap_values_tree, X_test))
-
